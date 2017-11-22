@@ -51,10 +51,12 @@ namespace TPLinkClient
             labelUptimeTimer.Stop();
         }
 
+        public static object updateThreadLock = new object();
+
         public void UpdateRouterInfo()
         {
-            if (updateThread != null)
-                updateThread.Abort();
+            if (updateThread != null && updateThread.IsAlive)
+                return;
 
             updateThread = new Thread(UpdateRouterInfoEntry);
             updateThread.Start();
@@ -97,17 +99,22 @@ namespace TPLinkClient
 
         public void UpdateRouterInfoEntry()
         {
-            ReadIniFile(Application.ProductName + ".ini");
+            lock (updateThreadLock)
+            {
+                ReadIniFile(Application.ProductName + ".ini");
 
-            try
-            {
-                telnet = new TPLinkTelnet(RouterInfo.IP, RouterInfo.Port);
-                telnet.UpdateInfo(RouterInfo.Username, RouterInfo.Password);
-                telnet.client.Close();
-            }
-            catch (SocketException)
-            {
-                SetStatusBarLabel("Brak połączenia sieciowego.");
+                try
+                {
+                    telnet = new TPLinkTelnet(RouterInfo.IP, RouterInfo.Port);
+                    telnet.UpdateInfo(RouterInfo.Username, RouterInfo.Password);
+                    telnet.client.Close();
+                }
+                catch (SocketException)
+                {
+                    SetStatusBarLabel("Brak połączenia sieciowego.");
+                }
+                
+                Thread.Sleep(1000);
             }
         }
 
@@ -330,8 +337,11 @@ namespace TPLinkClient
                 if (!timer.Enabled)
                     timer.Start();
 
-                this.seconds = seconds;
-                UpdateLabel();
+                if (Math.Abs(this.seconds - seconds) > 1)
+                {
+                    this.seconds = seconds;
+                    UpdateLabel();
+                }
             }
 
             private void UpdateLabel()
