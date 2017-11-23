@@ -27,3 +27,4 @@ Application is using telnet protocol to connect to the router and get needed inf
 + **External IP address** (no need to use 'whatsmyip' sites anymore)
 + **(A)DSL last synchronization time** (uptime)
 
+Tested with router TP-Link TD-W8970.
