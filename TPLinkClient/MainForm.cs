@@ -17,10 +17,21 @@ namespace TPLinkClient
 {
     public partial class MainForm : Form
     {
-        public static MainForm mainWindow;
-        public TPLinkTelnet telnet;
-        public Thread updateThread;
-        public LabelUptimeTimer labelUptimeTimer;
+        public static MainForm mainWindow = null;
+        public TPLinkTelnet telnet = null;
+        public Thread updateThread = null;
+
+        public LabelUptimeTimer labelUptimeTimer = new LabelUptimeTimer();
+
+        public static bool autoUpdateSilent = false;
+
+        private static bool autoUpdateEnabled = true;
+        private static bool cancelAutoUpdate = false;
+
+        public System.Timers.Timer autoUpdateTimer = new System.Timers.Timer {
+            AutoReset = true,
+            Interval = 10 * 1000,
+        };
 
         public class RouterInfo
         {
@@ -36,29 +47,51 @@ namespace TPLinkClient
             mainWindow = this;
 
             InitializeComponent();
-            
-            labelUptimeTimer = new LabelUptimeTimer();
+
+            initControlsRecursive(Controls);
+        }
+
+        void initControlsRecursive(Control.ControlCollection collection)
+        {
+            foreach (Control c in collection)
+            {
+                c.MouseDown += (sender, e) => {
+                    if (!(sender as Control).CanSelect)
+                        ActiveControl = null;
+                };
+
+                initControlsRecursive(c.Controls);
+            }
         }
 
         private void MainForm_Shown(object sender, EventArgs e)
         {
-            UpdateRouterInfo();
+            UpdateRouterInfo(false);
+            autoUpdateTimer.Elapsed += AutoUpdateTimer_Elapsed;
+            autoUpdateTimer.Start();
+        }
+
+        private void AutoUpdateTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            if (autoUpdateEnabled)
+                if (!cancelAutoUpdate)
+                    UpdateRouterInfo(autoUpdateSilent);
         }
 
         private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
         {
+            mainWindow = null;
             updateThread.Abort();
+            autoUpdateTimer.Stop();
             labelUptimeTimer.Stop();
         }
 
-        public static object updateThreadLock = new object();
-
-        public void UpdateRouterInfo()
+        public void UpdateRouterInfo(bool silent)
         {
             if (updateThread != null && updateThread.IsAlive)
                 return;
 
-            updateThread = new Thread(UpdateRouterInfoEntry);
+            updateThread = new Thread(() => { UpdateRouterInfoEntry(silent); });
             updateThread.Start();
         }
 
@@ -89,6 +122,16 @@ namespace TPLinkClient
                             case "username": RouterInfo.Username = value; break;
                             case "password": RouterInfo.Password = value; break;
                             case "waninterface": RouterInfo.WANInterface = value; break;
+                            case "autoupdate":
+                                if (bool.TryParse(value, out bool autoUpdate))
+                                {
+                                    autoUpdateEnabled = autoUpdate;
+                                    mainWindow?.BeginInvoke((MethodInvoker)delegate
+                                    {
+                                        mainWindow.chkAutoUpdate.Checked = autoUpdate;
+                                    });
+                                }
+                                break;
                         }
                     }
                 }
@@ -97,30 +140,43 @@ namespace TPLinkClient
             iniReaded = true;
         }
 
-        public void UpdateRouterInfoEntry()
+        public static object updateThreadLock = new object();
+
+        public void UpdateRouterInfoEntry(bool silent)
         {
             lock (updateThreadLock)
             {
+                mainWindow?.BeginInvoke((MethodInvoker)delegate
+                {
+                    mainWindow.buttonRefresh.Enabled = false;
+                });
+
                 ReadIniFile(Application.ProductName + ".ini");
 
                 try
                 {
                     telnet = new TPLinkTelnet(RouterInfo.IP, RouterInfo.Port);
-                    telnet.UpdateInfo(RouterInfo.Username, RouterInfo.Password);
+                    telnet.UpdateInfo(RouterInfo.Username, RouterInfo.Password, silent);
                     telnet.client.Close();
                 }
                 catch (SocketException)
                 {
-                    SetStatusBarLabel("Brak połączenia sieciowego.");
+                    if (!silent)
+                        SetStatusBarLabel("Brak połączenia sieciowego.");
                 }
                 
                 Thread.Sleep(1000);
+
+                mainWindow?.BeginInvoke((MethodInvoker)delegate
+                {
+                    mainWindow.buttonRefresh.Enabled = true;
+                });
             }
         }
 
         public static void SetStatusBarLabel(string text)
         {
-            mainWindow.Invoke((MethodInvoker) delegate 
+            mainWindow?.BeginInvoke((MethodInvoker) delegate 
             {
                 mainWindow.statusBarLabel.Text = text;
             });
@@ -208,7 +264,7 @@ namespace TPLinkClient
                 if (match.Groups.Count >= 2)
                     return match.Groups[1].ToString();
                 else
-                    return string.Empty;
+                    return null;
             }
 
             public bool CheckMessageRegex(string regex)
@@ -219,9 +275,10 @@ namespace TPLinkClient
                     return false;
             }
 
-            public void UpdateInfo(string username, string password)
+            public void UpdateInfo(string username, string password, bool silent)
             {
-                SetStatusBarLabel("Nawiązywanie połączenia...");
+                if (!silent)
+                    SetStatusBarLabel("Nawiązywanie połączenia...");
 
                 if (!ReadMessageRegex("username:"))
                 {
@@ -229,11 +286,13 @@ namespace TPLinkClient
 
                     if (CheckMessageRegex("Authorization failed"))
                     {
-                        SetStatusBarLabel("Przekroczono limit nieprawidłowych prób logowania.");
+                        if (!silent)
+                            SetStatusBarLabel("Przekroczono limit nieprawidłowych prób logowania.");
                         return;
                     }
 
-                    SetStatusBarLabel("Nie udało się ustanowić połączenia z routerem.");
+                    if (!silent)
+                        SetStatusBarLabel("Nie udało się ustanowić połączenia z routerem.");
                     return;
                 }
                 
@@ -244,7 +303,8 @@ namespace TPLinkClient
                 if (!ReadMessageRegex("password:"))
                 {
                     Console.WriteLine("Nie znaleziono regex w response. (password)");
-                    SetStatusBarLabel("Coś poszło nie tak przy logowaniu.");
+                    if (!silent)
+                        SetStatusBarLabel("Coś poszło nie tak przy logowaniu.");
                     return;
                 }
 
@@ -258,11 +318,15 @@ namespace TPLinkClient
 
                     if (CheckMessageRegex("Login incorrect"))
                     {
-                        SetStatusBarLabel("Dane uwierzytelniające są nieprawidłowe.");
+                        if (!silent)
+                            SetStatusBarLabel("Dane uwierzytelniające są nieprawidłowe.");
+
+                        cancelAutoUpdate = true;
                         return;
                     }
 
-                    SetStatusBarLabel("Nie udało się zalogować.");
+                    if (!silent)
+                        SetStatusBarLabel("Nie udało się zalogować.");
 
                     return;
                 }
@@ -274,7 +338,8 @@ namespace TPLinkClient
                 if (!ReadMessageRegex("\\#"))
                 {
                     Console.WriteLine("Nie znaleziono regex w response. (# -> wan show connection info)");
-                    SetStatusBarLabel("Nie udało się pobrać informacji o interfejsie WAN.");
+                    if (!silent)
+                        SetStatusBarLabel("Nie udało się pobrać informacji o interfejsie WAN.");
                     return;
                 }
 
@@ -283,18 +348,30 @@ namespace TPLinkClient
                 String uptime = GetMessageInfo("uptime");
                 String connectionStatus = GetMessageInfo("connectionStatus");
                 String externalIPAddress = GetMessageInfo("externalIPAddress");
+
+                if (uptime != null && connectionStatus != null && externalIPAddress != null)
+                {
+                    mainWindow?.BeginInvoke((MethodInvoker)delegate {
+                        mainWindow.labelStatus.Text = connectionStatus;
+                        mainWindow.labelWanIP.Text = externalIPAddress;
+                    });
+
+                    int.TryParse(uptime, out int uptimeSeconds);
+
+                    mainWindow?.labelUptimeTimer.Update(uptimeSeconds);
+
+                    //if (!silent)
+                    SetStatusBarLabel(string.Format(
+                        "Zakończono pobieranie danych ({0}).", DateTime.Now.ToString("HH:mm")));
+
+                    cancelAutoUpdate = false;
+                }
+                else
+                {
+                    if (!silent)
+                        SetStatusBarLabel("Nie udało się odczytać potrzebnych informacji.");
+                }
                 
-                mainWindow.Invoke((MethodInvoker) delegate {
-                    mainWindow.labelStatus.Text = connectionStatus;
-                    mainWindow.labelWanIP.Text = externalIPAddress;
-                });
-
-                int.TryParse(uptime, out int uptimeSeconds);
-
-                mainWindow.labelUptimeTimer.Update(uptimeSeconds);
-
-                SetStatusBarLabel("Zakończono pobieranie danych.");
-
                 // logout
 
                 SendMessage("logout");
@@ -332,42 +409,82 @@ namespace TPLinkClient
                 timer.Stop();
             }
 
-            public void Update(int seconds)
+            public void Update(int seconds, bool startIfNeeded = true)
             {
-                if (!timer.Enabled)
+                if (seconds < 0)
+                    seconds = 0;
+
+                if (!timer.Enabled && startIfNeeded && seconds != 0)
                     timer.Start();
 
-                if (Math.Abs(this.seconds - seconds) > 1)
+                if (seconds == 0)
+                    timer.Stop();
+                
+                if (Math.Abs(this.seconds - seconds) > 1 || seconds == 0)
                 {
                     this.seconds = seconds;
-                    UpdateLabel();
+                    UpdateLabel(seconds);
                 }
             }
 
-            private void UpdateLabel()
+            private void UpdateLabel(int secs)
             {
                 String uptime = string.Format("{0:00}:{1:00}:{2:00}",
-                    seconds / 3600, (seconds / 60) % 60, seconds % 60);
-
-                mainWindow.Invoke((MethodInvoker)delegate {
+                    secs / 3600, (secs / 60) % 60, secs % 60);
+                
+                mainWindow?.BeginInvoke((MethodInvoker)delegate {
                     mainWindow.labelUptime.Text = uptime;
                 });
             }
 
             private void Timer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
             {
-                seconds++;
-                UpdateLabel();
+                UpdateLabel(++seconds);
             }
         }
         
         private void MainForm_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
         {
+            
+        }
+
+        private void buttonRefresh_Click(object sender, EventArgs e)
+        {
+            UpdateRouterInfo(false);
+        }
+
+        private void chkAutoUpdate_CheckedChanged(object sender, EventArgs e)
+        {
+            autoUpdateEnabled = chkAutoUpdate.Checked;
+        }
+
+        private void MainForm_KeyDown(object sender, KeyEventArgs e)
+        {
             if (e.KeyCode == Keys.F5)
             {
                 //Console.WriteLine("Updating...");
-                UpdateRouterInfo();
+                UpdateRouterInfo(false);
             }
+            else if (e.KeyCode == Keys.Escape)
+            {
+                if (ActiveControl != null)
+                    ActiveControl = null;
+            }
+        }
+
+        private void tableMenuCopyIP_Click(object sender, EventArgs e)
+        {
+            Clipboard.SetText(labelWanIP.Text);
+        }
+
+        private void buttonRefresh_MouseEnter(object sender, EventArgs e)
+        {
+            buttonRefresh.Image = Properties.Resources.refresh_button_hover;
+        }
+
+        private void buttonRefresh_MouseLeave(object sender, EventArgs e)
+        {
+            buttonRefresh.Image = Properties.Resources.refresh_button;
         }
     }
 }
