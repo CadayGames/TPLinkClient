@@ -87,6 +87,7 @@
   <ItemGroup>
     <None Include="resources\refresh-button.png" />
     <None Include="resources\refresh-button-hover.png" />
+    <None Include="resources\copy-icon.png" />
     <Content Include="tplink.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

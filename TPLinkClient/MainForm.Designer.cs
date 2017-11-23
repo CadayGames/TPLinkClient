@@ -31,6 +31,8 @@
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.tableMenuCopyIP = new System.Windows.Forms.ToolStripMenuItem();
             this.labelStatus = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
@@ -39,15 +41,13 @@
             this.labelUptime = new System.Windows.Forms.Label();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.statusBarLabel = new System.Windows.Forms.ToolStripStatusLabel();
-            this.buttonRefresh = new System.Windows.Forms.Button();
             this.chkAutoUpdate = new System.Windows.Forms.CheckBox();
             this.mainPanel = new System.Windows.Forms.Panel();
-            this.tableMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.tableMenuCopyIP = new System.Windows.Forms.ToolStripMenuItem();
+            this.buttonRefresh = new System.Windows.Forms.Button();
             this.tableLayoutPanel1.SuspendLayout();
+            this.tableMenu.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.mainPanel.SuspendLayout();
-            this.tableMenu.SuspendLayout();
             this.SuspendLayout();
             // 
             // tableLayoutPanel1
@@ -75,6 +75,21 @@
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tableLayoutPanel1.Size = new System.Drawing.Size(275, 106);
             this.tableLayoutPanel1.TabIndex = 0;
+            // 
+            // tableMenu
+            // 
+            this.tableMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.tableMenuCopyIP});
+            this.tableMenu.Name = "tableMenu";
+            this.tableMenu.Size = new System.Drawing.Size(153, 48);
+            // 
+            // tableMenuCopyIP
+            // 
+            this.tableMenuCopyIP.Image = global::TPLinkClient.Properties.Resources.copy_icon;
+            this.tableMenuCopyIP.Name = "tableMenuCopyIP";
+            this.tableMenuCopyIP.Size = new System.Drawing.Size(152, 22);
+            this.tableMenuCopyIP.Text = "Kopiuj adres IP";
+            this.tableMenuCopyIP.Click += new System.EventHandler(this.tableMenuCopyIP_Click);
             // 
             // labelStatus
             // 
@@ -171,22 +186,6 @@
             this.statusBarLabel.Size = new System.Drawing.Size(150, 17);
             this.statusBarLabel.Text = "Nawiązywanie połączenia...";
             // 
-            // buttonRefresh
-            // 
-            this.buttonRefresh.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.buttonRefresh.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.buttonRefresh.ForeColor = System.Drawing.SystemColors.Control;
-            this.buttonRefresh.Image = global::TPLinkClient.Properties.Resources.refresh_button;
-            this.buttonRefresh.Location = new System.Drawing.Point(262, 116);
-            this.buttonRefresh.Margin = new System.Windows.Forms.Padding(0);
-            this.buttonRefresh.Name = "buttonRefresh";
-            this.buttonRefresh.Size = new System.Drawing.Size(38, 38);
-            this.buttonRefresh.TabIndex = 2;
-            this.buttonRefresh.UseVisualStyleBackColor = true;
-            this.buttonRefresh.Click += new System.EventHandler(this.buttonRefresh_Click);
-            this.buttonRefresh.MouseEnter += new System.EventHandler(this.buttonRefresh_MouseEnter);
-            this.buttonRefresh.MouseLeave += new System.EventHandler(this.buttonRefresh_MouseLeave);
-            // 
             // chkAutoUpdate
             // 
             this.chkAutoUpdate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
@@ -216,19 +215,21 @@
             this.mainPanel.Size = new System.Drawing.Size(303, 178);
             this.mainPanel.TabIndex = 4;
             // 
-            // tableMenu
+            // buttonRefresh
             // 
-            this.tableMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.tableMenuCopyIP});
-            this.tableMenu.Name = "tableMenu";
-            this.tableMenu.Size = new System.Drawing.Size(153, 26);
-            // 
-            // tableMenuCopyIP
-            // 
-            this.tableMenuCopyIP.Name = "tableMenuCopyIP";
-            this.tableMenuCopyIP.Size = new System.Drawing.Size(152, 22);
-            this.tableMenuCopyIP.Text = "Kopiuj adres IP";
-            this.tableMenuCopyIP.Click += new System.EventHandler(this.tableMenuCopyIP_Click);
+            this.buttonRefresh.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.buttonRefresh.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.buttonRefresh.ForeColor = System.Drawing.SystemColors.Control;
+            this.buttonRefresh.Image = global::TPLinkClient.Properties.Resources.refresh_button;
+            this.buttonRefresh.Location = new System.Drawing.Point(262, 116);
+            this.buttonRefresh.Margin = new System.Windows.Forms.Padding(0);
+            this.buttonRefresh.Name = "buttonRefresh";
+            this.buttonRefresh.Size = new System.Drawing.Size(38, 38);
+            this.buttonRefresh.TabIndex = 2;
+            this.buttonRefresh.UseVisualStyleBackColor = true;
+            this.buttonRefresh.Click += new System.EventHandler(this.buttonRefresh_Click);
+            this.buttonRefresh.MouseEnter += new System.EventHandler(this.buttonRefresh_MouseEnter);
+            this.buttonRefresh.MouseLeave += new System.EventHandler(this.buttonRefresh_MouseLeave);
             // 
             // MainForm
             // 
@@ -249,11 +250,11 @@
             this.PreviewKeyDown += new System.Windows.Forms.PreviewKeyDownEventHandler(this.MainForm_PreviewKeyDown);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel1.PerformLayout();
+            this.tableMenu.ResumeLayout(false);
             this.statusStrip1.ResumeLayout(false);
             this.statusStrip1.PerformLayout();
             this.mainPanel.ResumeLayout(false);
             this.mainPanel.PerformLayout();
-            this.tableMenu.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
