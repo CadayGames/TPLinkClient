@@ -1,5 +1,5 @@
 
-![TP-Link Client](http://i.imgur.com/MQBZUJF.gif)
+![TP-Link Client](https://i.imgur.com/XEA9AWG.gif)
 
 # Instructions
 **TPLinkClient.ini** with settings must be located 
