@@ -21,7 +21,7 @@ waninterface=pppoe_0_35_3_d
 **password** - TP-Link router password (default admin) <br>
 **waninterface** - WAN interface name (displayed in status page) <br>
 
-Application is using telnet protocol to connect to the router and get needed information, which are:
+Application is using telnet protocol to connect to the router and get needed informations, which are:
 
 + **(A)DSL connection status**
 + **External IP address** (no need to use 'whatsmyip' sites anymore)
