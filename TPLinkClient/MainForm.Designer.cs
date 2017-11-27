@@ -81,7 +81,7 @@
             this.tableMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.tableMenuCopyIP});
             this.tableMenu.Name = "tableMenu";
-            this.tableMenu.Size = new System.Drawing.Size(153, 48);
+            this.tableMenu.Size = new System.Drawing.Size(153, 26);
             // 
             // tableMenuCopyIP
             // 
@@ -99,9 +99,9 @@
             this.labelStatus.Font = new System.Drawing.Font("Verdana", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
             this.labelStatus.Location = new System.Drawing.Point(113, 0);
             this.labelStatus.Name = "labelStatus";
-            this.labelStatus.Size = new System.Drawing.Size(76, 35);
+            this.labelStatus.Size = new System.Drawing.Size(23, 35);
             this.labelStatus.TabIndex = 3;
-            this.labelStatus.Text = "unknown";
+            this.labelStatus.Text = "...";
             this.labelStatus.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // label1
@@ -151,9 +151,9 @@
             this.labelWanIP.Font = new System.Drawing.Font("Verdana", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
             this.labelWanIP.Location = new System.Drawing.Point(113, 35);
             this.labelWanIP.Name = "labelWanIP";
-            this.labelWanIP.Size = new System.Drawing.Size(76, 35);
+            this.labelWanIP.Size = new System.Drawing.Size(23, 35);
             this.labelWanIP.TabIndex = 4;
-            this.labelWanIP.Text = "unknown";
+            this.labelWanIP.Text = "...";
             this.labelWanIP.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // labelUptime
@@ -164,9 +164,9 @@
             this.labelUptime.Font = new System.Drawing.Font("Verdana", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
             this.labelUptime.Location = new System.Drawing.Point(113, 70);
             this.labelUptime.Name = "labelUptime";
-            this.labelUptime.Size = new System.Drawing.Size(76, 36);
+            this.labelUptime.Size = new System.Drawing.Size(23, 36);
             this.labelUptime.TabIndex = 5;
-            this.labelUptime.Text = "unknown";
+            this.labelUptime.Text = "...";
             this.labelUptime.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // statusStrip1
@@ -196,9 +196,9 @@
             this.chkAutoUpdate.ForeColor = System.Drawing.Color.DarkBlue;
             this.chkAutoUpdate.Location = new System.Drawing.Point(12, 132);
             this.chkAutoUpdate.Name = "chkAutoUpdate";
-            this.chkAutoUpdate.Size = new System.Drawing.Size(217, 17);
+            this.chkAutoUpdate.Size = new System.Drawing.Size(203, 17);
             this.chkAutoUpdate.TabIndex = 1;
-            this.chkAutoUpdate.Text = "Auto update each 10 seconds";
+            this.chkAutoUpdate.Text = "Automatyczne odświeżanie";
             this.chkAutoUpdate.UseVisualStyleBackColor = true;
             this.chkAutoUpdate.CheckedChanged += new System.EventHandler(this.chkAutoUpdate_CheckedChanged);
             // 

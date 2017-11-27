@@ -18,7 +18,6 @@ namespace TPLinkClient
     public partial class MainForm : Form
     {
         public static MainForm mainWindow = null;
-        public TPLinkTelnet telnet = null;
         public Thread updateThread = null;
 
         public LabelUptimeTimer labelUptimeTimer = new LabelUptimeTimer();
@@ -126,10 +125,7 @@ namespace TPLinkClient
                                 if (bool.TryParse(value, out bool autoUpdate))
                                 {
                                     autoUpdateEnabled = autoUpdate;
-                                    mainWindow?.BeginInvoke((MethodInvoker)delegate
-                                    {
-                                        mainWindow.chkAutoUpdate.Checked = autoUpdate;
-                                    });
+                                    mainWindow?.UpdateAutoUpdate(autoUpdate);
                                 }
                                 break;
                         }
@@ -140,24 +136,81 @@ namespace TPLinkClient
             iniReaded = true;
         }
 
+        public void UpdateInfoLabels(string status, string ip, string uptime)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke((Action)(() => UpdateInfoLabels(status, ip, uptime)));
+                return;
+            }
+
+            labelStatus.Text = status;
+            labelWanIP.Text = ip;
+
+            int.TryParse(uptime, out int uptimeSeconds);
+
+            labelUptimeTimer.Update(uptimeSeconds);
+        }
+
+        public void UpdateUptimeLabel(string uptime)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke((Action)(() => UpdateUptimeLabel(uptime)));
+                return;
+            }
+
+            labelUptime.Text = uptime;
+        }
+
+        public void SetRefreshButtonEnabled(bool enabled)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke((Action)(() => SetRefreshButtonEnabled(enabled)));
+                return;
+            }
+
+            buttonRefresh.Enabled = enabled;
+        }
+
+        public void UpdateStatusBar(string text)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke((Action)(() => UpdateStatusBar(text)));
+                return;
+            }
+
+            statusBarLabel.Text = text;
+        }
+
+        public void UpdateAutoUpdate(bool enabled)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke((Action)(() => UpdateAutoUpdate(enabled)));
+                return;
+            }
+
+            chkAutoUpdate.Checked = enabled;
+        }
+
         public static object updateThreadLock = new object();
 
         public void UpdateRouterInfoEntry(bool silent)
         {
             lock (updateThreadLock)
             {
-                mainWindow?.BeginInvoke((MethodInvoker)delegate
-                {
-                    mainWindow.buttonRefresh.Enabled = false;
-                });
+                mainWindow?.SetRefreshButtonEnabled(false);
 
                 ReadIniFile(Application.ProductName + ".ini");
 
                 try
                 {
-                    telnet = new TPLinkTelnet(RouterInfo.IP, RouterInfo.Port);
+                    TPLinkTelnet telnet = new TPLinkTelnet(RouterInfo.IP, RouterInfo.Port);
                     telnet.UpdateInfo(RouterInfo.Username, RouterInfo.Password, silent);
-                    telnet.client.Close();
+                    telnet.Dispose();
                 }
                 catch (SocketException)
                 {
@@ -167,35 +220,46 @@ namespace TPLinkClient
                 
                 Thread.Sleep(1000);
 
-                mainWindow?.BeginInvoke((MethodInvoker)delegate
-                {
-                    mainWindow.buttonRefresh.Enabled = true;
-                });
+                mainWindow?.SetRefreshButtonEnabled(true);
             }
         }
 
         public static void SetStatusBarLabel(string text)
         {
-            mainWindow?.BeginInvoke((MethodInvoker) delegate 
-            {
-                mainWindow.statusBarLabel.Text = text;
-            });
+            mainWindow?.UpdateStatusBar(text);
         }
 
-        public class TPLinkTelnet
+        public class TPLinkTelnet : IDisposable
         {
             public static int WAIT_DELAY_MS = 20;
             public static int RESPONSE_SIZE = 4096;
 
-            public TcpClient client = null;
-            public NetworkStream ns = null;
+            public TcpClient Client;
+            public NetworkStream Stream;
 
             public TPLinkTelnet(string ip, int port)
             {
-                client = new TcpClient(ip, port);
-                ns = client.GetStream();
+                Client = new TcpClient(ip, port);
+
+                if (Client != null)
+                    Stream = Client.GetStream();
             }
             
+            public void Dispose()
+            {
+                if (Stream != null)
+                {
+                    Stream.Close();
+                    Stream = null;
+                }
+
+                if (Client != null)
+                {
+                    Client.Close();
+                    Client = null;
+                }
+            }
+                        
             byte[] responseBytes = new byte[RESPONSE_SIZE];
             string response = string.Empty;
             string responseBytesStr = string.Empty;
@@ -205,9 +269,9 @@ namespace TPLinkClient
             {
                 for (int i = 0; i < max_loops; i++)
                 {
-                    if (ns.DataAvailable)
+                    if (Stream.DataAvailable)
                     {
-                        bytesRead = ns.Read(responseBytes, 0, RESPONSE_SIZE);
+                        bytesRead = Stream.Read(responseBytes, 0, RESPONSE_SIZE);
 
                         if (bytesRead > 0)
                         {
@@ -254,7 +318,7 @@ namespace TPLinkClient
             public void SendMessage(string message)
             {
                 byte[] commandBytes = Encoding.UTF8.GetBytes(message + "\r\n");
-                ns.Write(commandBytes, 0, commandBytes.Length);
+                Stream.Write(commandBytes, 0, commandBytes.Length);
             }
 
             public string GetMessageInfo(string var)
@@ -351,14 +415,7 @@ namespace TPLinkClient
 
                 if (uptime != null && connectionStatus != null && externalIPAddress != null)
                 {
-                    mainWindow?.BeginInvoke((MethodInvoker)delegate {
-                        mainWindow.labelStatus.Text = connectionStatus;
-                        mainWindow.labelWanIP.Text = externalIPAddress;
-                    });
-
-                    int.TryParse(uptime, out int uptimeSeconds);
-
-                    mainWindow?.labelUptimeTimer.Update(uptimeSeconds);
+                    mainWindow?.UpdateInfoLabels(connectionStatus, externalIPAddress, uptime);
 
                     //if (!silent)
                     SetStatusBarLabel(string.Format(
@@ -429,12 +486,10 @@ namespace TPLinkClient
 
             private void UpdateLabel(int secs)
             {
-                String uptime = string.Format("{0:00}:{1:00}:{2:00}",
+                string uptime = string.Format("{0:00}:{1:00}:{2:00}",
                     secs / 3600, (secs / 60) % 60, secs % 60);
-                
-                mainWindow?.BeginInvoke((MethodInvoker)delegate {
-                    mainWindow.labelUptime.Text = uptime;
-                });
+
+                mainWindow?.UpdateUptimeLabel(uptime);
             }
 
             private void Timer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)

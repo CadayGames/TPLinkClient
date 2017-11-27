@@ -85,6 +85,7 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="tplink_2.ico" />
     <None Include="resources\refresh-button.png" />
     <None Include="resources\refresh-button-hover.png" />
     <None Include="resources\copy-icon.png" />
